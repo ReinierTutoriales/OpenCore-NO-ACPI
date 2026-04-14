@@ -1,74 +1,134 @@
-# OpenCore sin inyección ACPI 🚀
-Guía para evitar inyección ACPI (SSDTs/parches) y ciertos quirks fuera de macOS.
+# OpenCore sin inyección ACPI
+
+> Fork no oficial de OpenCore que evita la inyección de SSDTs, parches ACPI y ciertos quirks fuera de macOS.
 
 ---
 
-## ℹ️ Acerca de
-**OpenCore sin inyección ACPI** es una bifurcación *no oficial* de OpenCore (no respaldada por **Acidanthera**). El proyecto original es de **btwise** y los builds más usados se publican en **OpenCore_NO_ACPI_Build**.
+## ¿Qué es y para qué sirve?
 
-Su propósito es simple: **evitar la inyección de ACPI en sistemas distintos a macOS**. Esto ayuda cuando tu EFI (pensada para macOS) provoca problemas en otros sistemas, especialmente **Windows** (incluyendo BSOD en algunos casos).
+Este fork añade el quirk `EnableForAll` que, cuando se establece en `false`, desactiva la inyección ACPI y ciertos comportamientos del bloque `Booter` en cualquier sistema operativo que no sea macOS.
 
-> Si tu EFI está correctamente diseñada (inyección selectiva por SO o configuración correcta), normalmente **no necesitas** esta bifurcación.
+**Caso de uso principal:** tienes una EFI funcional para macOS y experimentas problemas en Windows — incluyendo BSOD — causados por SSDTs o parches ACPI que no deberían aplicarse fuera de macOS.
 
----
+> ℹ️ **Nota:** Si tu EFI ya usa inyección selectiva por sistema operativo (`_OSI ("Darwin")`), normalmente **no necesitas este fork**. Esta solución está pensada para quienes no quieren o no pueden reescribir sus SSDTs.
 
-## ✅ Requisitos previos
-1. Una EFI funcional y un `config.plist` ya configurado.
-2. **Obligatorio:** la versión del fork debe **coincidir** con la versión de tu OpenCore.
-   - Ejemplo: OpenCore **0.9.7** → fork **0.9.7**
-   - Si no coincide, suelen aparecer errores de validación y fallos.
+El proyecto original es de **btwise**. Los builds publicados y mantenidos están en **[wjz304/OpenCore_NO_ACPI_Build](https://github.com/wjz304/OpenCore_NO_ACPI_Build/releases)**.
 
 ---
 
-## 🧠 Cómo funciona
-Este fork añade el quirk **`EnableForAll`** en dos rutas:
+## Requisitos
 
-- `ACPI/Quirks/EnableForAll`
-- `Booter/Quirks/EnableForAll`
+- EFI funcional con `config.plist` ya configurado
+- La versión del fork **debe coincidir exactamente** con tu versión de OpenCore
 
-Cuando `EnableForAll = false`:
-- **No se inyectan** parches ACPI/SSDTs fuera de macOS.
-- **No se aplican** ciertos comportamientos del bloque Booter fuera de macOS (según el fork).
+| Tu OpenCore | Fork a descargar |
+|:---|:---|
+| 0.9.7 | OpenCore_NO_ACPI 0.9.7 |
+| 1.0.x | OpenCore_NO_ACPI 1.0.x |
 
----
-
-## 🛠️ Instalación paso a paso
-1. **Haz backup** de tu EFI actual (recomendado en un USB FAT32).
-2. Descarga la release que **coincida con tu versión de OpenCore**:
-   - https://github.com/wjz304/OpenCore_NO_ACPI_Build/releases
-3. Extrae el ZIP y reemplaza en tu EFI estos archivos:
-   - `EFI/Boot/BootX64.efi`
-   - `EFI/OC/OpenCore.efi`
-4. Reemplaza también (solo si corresponde a tu setup):
-   - `EFI/OC/Drivers` (los drivers que realmente uses)
-   - `EFI/OC/Tools` (tus herramientas)
-5. Edita tu `config.plist` y añade/ajusta estas claves:
-   - `ACPI -> Quirks -> EnableForAll` = `False`
-   - `Booter -> Quirks -> EnableForAll` = `False`
-6. Guarda cambios y reinicia.
+> ⚠️ Una versión incorrecta genera errores de validación en el arranque.
 
 ---
 
-## 🔍 Verificación en Windows
-1. Arranca **Windows** desde el picker de OpenCore.
-2. Ejecuta **HWiNFO**:
-   - https://sourceforge.net/projects/hwinfo/
-3. Revisa “System Manufacturer / Model” (o equivalente):
-   - Debe mostrar el fabricante/modelo real de tu placa/portátil.
-   - Si ves **“Acidanthera”** o el modelo del Mac de tu SMBIOS, entonces la inyección/identidad **sigue activa** (config incorrecta o no aplicado el fork).
+## Cómo funciona
+
+El fork expone dos nuevas claves en `config.plist`:
+
+```
+ACPI → Quirks → EnableForAll
+Booter → Quirks → EnableForAll
+```
+
+| Valor | Comportamiento |
+|:---|:---|
+| `true` | OpenCore inyecta ACPI y aplica quirks en **todos** los sistemas (comportamiento estándar) |
+| `false` | Inyección ACPI y quirks de Booter **solo activos en macOS** |
 
 ---
 
-## 💡 TIP: Solo quieres evitar SMBIOS en Windows (sin usar el fork)
-Si tu objetivo es únicamente evitar que Windows vea identidad “Mac”, en OpenCore oficial normalmente basta con:
+## Instalación
 
-- `Kernel/Quirks/CustomSMBIOSGuid` = `True`
-- `PlatformInfo/SMBIOS/UpdateSMBIOSMode` = `Custom`
+**1. Backup obligatorio**
 
-Guarda y reinicia.
+Copia tu EFI actual a un USB FAT32 antes de continuar.
+
+**2. Descarga el fork**
+
+Descarga la release que coincida con tu versión de OpenCore:
+[github.com/wjz304/OpenCore_NO_ACPI_Build/releases](https://github.com/wjz304/OpenCore_NO_ACPI_Build/releases)
+
+**3. Reemplaza los binarios principales**
+
+```
+EFI/Boot/BootX64.efi
+EFI/OC/OpenCore.efi
+```
+
+**4. Reemplaza drivers y herramientas** *(solo los que uses)*
+
+```
+EFI/OC/Drivers/
+EFI/OC/Tools/
+```
+
+**5. Edita `config.plist`**
+
+Añade o ajusta las siguientes claves:
+
+```xml
+<!-- ACPI → Quirks -->
+<key>EnableForAll</key>
+<false/>
+
+<!-- Booter → Quirks -->
+<key>EnableForAll</key>
+<false/>
+```
+
+**6. Guarda y reinicia.**
 
 ---
 
-## 🌐 Recursos
-- Builds (releases): https://github.com/wjz304/OpenCore_NO_ACPI_Build/releases  
-- Proyecto original (referencia): https://gitee.com/btwise/OpenCore_NO_ACPI
+## Verificación en Windows
+
+Arranca Windows desde el picker de OpenCore y abre **[HWiNFO](https://sourceforge.net/projects/hwinfo/)**.
+
+En la sección **System Summary**, revisa el campo *System / Motherboard Manufacturer*:
+
+| Lo que ves | Diagnóstico |
+|:---|:---|
+| Fabricante real de tu placa (ej. `ASUS`, `Gigabyte`) | ✅ Fork aplicado correctamente |
+| `Acidanthera` o modelo de Mac (ej. `MacPro7,1`) | ❌ SMBIOS/ACPI siguen inyectándose — revisar configuración |
+
+---
+
+## Alternativa sin fork: solo evitar SMBIOS en Windows
+
+Si el único objetivo es que Windows no vea la identidad Mac, OpenCore oficial lo resuelve sin necesidad del fork:
+
+```xml
+<!-- Kernel → Quirks -->
+<key>CustomSMBIOSGuid</key>
+<true/>
+
+<!-- PlatformInfo → Generic -->
+<key>UpdateSMBIOSMode</key>
+<string>Custom</string>
+```
+
+Esto no afecta la inyección ACPI, solo el SMBIOS.
+
+---
+
+## Recursos
+
+| Recurso | Enlace |
+|:---|:---|
+| Releases del fork | [wjz304/OpenCore_NO_ACPI_Build](https://github.com/wjz304/OpenCore_NO_ACPI_Build/releases) |
+| Proyecto original (btwise) | [gitee.com/btwise/OpenCore_NO_ACPI](https://gitee.com/btwise/OpenCore_NO_ACPI) |
+
+---
+
+<div align="center">
+<sub>Guía por <a href="https://www.reiniertutoriales.com/">ReinierTutoriales</a></sub>
+</div>
